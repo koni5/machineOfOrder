@@ -100,7 +100,7 @@
       v-model="popCart"
       direction="btt"
   >
-    <PopCart :cartList="cartList"></PopCart>
+    <PopCart :cartList="cartList" :getCartList="getCartInfo" :closeCart="closeCart"></PopCart>
   </el-drawer>
 </template>
 <script setup>
@@ -131,6 +131,10 @@ const getCartInfo = async () => {
 const shopStore = useShopStore()
 //购物车弹窗控制
 let popCart = ref(false)
+//关闭购物车弹窗
+const closeCart = () => {
+  popCart.value = false
+}
 // 添加到购物车
 const addToCart = async () => {
   // 检查口味是否选择完整
@@ -143,8 +147,8 @@ const addToCart = async () => {
   let selectedData = flavors.value.map(flavor => `${flavor.name}:${selectedFlavors.value[flavor.name]}`).join(';');
   // console.log(selectedData)
   flavorVisible.value = false;
-  let res = await addToCartAPI({dishId: dishId.value, dishFlavor: selectedData, shopId: shopStore.info.id})
-  // console.log(res.data)
+  await addToCartAPI({dishId: dishId.value, dishFlavor: selectedData, shopId: shopStore.info.id})
+  getCartInfo()
 }
 // 存储用户选择的口味数据
 let selectedFlavors = ref({});
@@ -199,7 +203,9 @@ onMounted(async () => {
 .custom-drawer {
   .el-drawer__body {
     padding-bottom: 88px; /* Ensure space for footer */
-  }}
+  }
+}
+
 .order_form {
   .order_but {
     font-family: PingFangSC, PingFangSC-Medium;

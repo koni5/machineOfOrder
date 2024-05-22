@@ -6,7 +6,7 @@
         <el-icon color="#409eff">
           <Delete/>
         </el-icon>
-        <span @click="clearCart" class="clear-des">清空</span>
+        <span @click="clearCartAll" class="clear-des">清空</span>
       </div>
     </div>
     <div class="card_order_list">
@@ -41,29 +41,34 @@
 </template>
 
 <script setup>
-import {ref} from 'vue';
+import {ref, watch} from 'vue';
+import {addOneAPI, deleteOneAPI, clearCartAllAPI} from "@/service/shoppingCart.js";
+import {useShopStore} from "@/stores/index.js";
 
-let props = defineProps(['cartList'])
-const clearCart = () => {
-  cartList.value = [];
-};
-
-const deleteDish = (id) => {
-  const index = cartList.value.findIndex(item => item.id === id);
-  if (index !== -1) {
-    cartList.value[index].number -= 1;
-    if (cartList.value[index].number === 0) {
-      cartList.value.splice(index, 1);
-    }
-  }
-};
-
+let props = defineProps(['cartList', 'getCartList', 'closeCart'])
+//店铺信息仓库
+const shopStore = useShopStore()
 //购物车菜品加1
 const addDish = async (shopCartId) => {
   // console.log(shopCartId)
-  await addOneAPI(shopCartId);
-  props.getCartList();
-};
+  await addOneAPI(shopCartId)
+  props.getCartList()
+}
+//购物车菜品减1
+const deleteDish = async (shopCartId) => {
+  await deleteOneAPI(shopCartId)
+  props.getCartList()
+}
+//购物车清空
+const clearCartAll = async () => {
+  await clearCartAllAPI(shopStore.info.id)
+  props.getCartList()
+}
+watch(() => {
+  if (props.cartList.length === 0) {
+    props.closeCart()
+  }
+})
 </script>
 
 <style lang="scss" scoped>
