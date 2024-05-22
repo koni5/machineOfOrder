@@ -16,13 +16,14 @@
       <el-main>
         <el-scrollbar height="100vh">
           <el-row :gutter="20">
-            <el-col :span="8" v-for="item in dishList">
+            <el-col :span="8" v-for="item in dishList" :key="item.id">
               <el-card style="max-width: 480px" shadow="hover">
                 <template #footer>
                   <p>{{ item.name }}</p>
                   <div class="dishInfo"><span>配料:{{ item.description }}</span>
                     <span>价格:{{ item.price }}￥</span>
-                    <el-button @click="flavorPopup(item.name)" style="margin-top: 10px" type="primary" round>选择口味
+                    <el-button @click="flavorPopup(item.name,item.id)" style="margin-top: 10px" type="primary" round>
+                      选择口味
                     </el-button>
                   </div>
                 </template>
@@ -85,23 +86,29 @@
   </el-drawer>
 </template>
 <script setup>
+import {useShopStore} from "@/stores/index.js";
 import {getCategoryAPI, getDishAPI} from "@/service/menu.js";
-import {onMounted, ref, computed} from "vue";
+import {addToCartAPI} from "@/service/shoppingCart.js";
+import {onMounted, ref} from "vue";
 import PopCart from "@/components/popCart.vue";
+//店铺仓库信息
+const shopStore = useShopStore()
 //购物车弹窗控制
 let popCart = ref(true)
 // 添加到购物车
-const addToCart = () => {
+const addToCart = async () => {
   // 检查口味是否选择完整
   for (let flavor of flavors.value) {
     if (!selectedFlavors.value[flavor.name]) {
       alert(`请选择${flavor.name}`);
       return; // 口味未选择完整，不执行添加到购物车操作
     }
-    let selectedData = flavors.value.map(flavor => `${flavor.name}:${selectedFlavors.value[flavor.name]}`).join(';');
-    console.log(selectedData)
   }
+  let selectedData = flavors.value.map(flavor => `${flavor.name}:${selectedFlavors.value[flavor.name]}`).join(';');
+  // console.log(selectedData)
   flavorVisible.value = false;
+  let res = await addToCartAPI({dishId:dishId.value, dishFlavor: selectedData, shopId: shopStore.info.id})
+  // console.log(res.data)
 }
 // 存储用户选择的口味数据
 let selectedFlavors = ref({});
@@ -111,12 +118,15 @@ let flavorVisible = ref(false)
 let flavors = ref()
 //选择口味时标题中的菜品名字
 let dishName = ref()
+//菜品id
+let dishId = ref()
 //打开口味弹窗
-const flavorPopup = (val) => {
+const flavorPopup = (val1, val2) => {
   flavorVisible.value = true;
   let item = category.value.find(val => val.id === categoryId)
   flavors.value = item.flavors
-  dishName.value = val
+  dishName.value = val1
+  dishId.value = val2
   // console.log(flavors.value)
 }
 //关闭口味弹窗
