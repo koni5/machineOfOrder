@@ -39,7 +39,7 @@
       </el-main>
     </el-container>
     <!-- 购物车里没有订单的状态 -->
-    <div class="footer_order_buttom" v-if="true">
+    <div class="footer_order_buttom" v-if="cartList?.length===0">
       <div class="order_number">
         <img
             src="../../assets/package.png"
@@ -51,6 +51,24 @@
         <span class="ico">您还未挑选商品</span>
       </div>
       <div class="order_but">去结算</div>
+    </div>
+    <!-- 购物车里有订单的状态-->
+    <div style="z-index: 100;" class="footer_order_buttom order_form" v-else>
+      <div class="orderCar" @click="popCart=true">
+        <div class="order_number">
+          <img
+              src="../../assets/package.png"
+              class="order_number_icon"
+              alt="Order Icon"
+          />
+          <div class="order_dish_num">{{ dishNum }}</div>
+        </div>
+        <div class="order_price">
+          <span class="ico">￥</span>
+          {{ cartSum }}
+        </div>
+      </div>
+      <div class="order_but2">去结算</div>
     </div>
   </div>
   <!--  口味选择弹窗-->
@@ -78,23 +96,41 @@
   </el-dialog>
   <!--  购物车详情弹窗-->
   <el-drawer
+      z-index="99"
       v-model="popCart"
-      title="I am the title"
       direction="btt"
   >
-    <PopCart></PopCart>
+    <PopCart :cartList="cartList"></PopCart>
   </el-drawer>
 </template>
 <script setup>
 import {useShopStore} from "@/stores/index.js";
 import {getCategoryAPI, getDishAPI} from "@/service/menu.js";
-import {addToCartAPI} from "@/service/shoppingCart.js";
-import {onMounted, ref} from "vue";
+import {addToCartAPI, getCartInfoAPI} from "@/service/shoppingCart.js";
+import {onMounted, ref, computed} from "vue";
 import PopCart from "@/components/popCart.vue";
+//计算购物车总金额
+let cartSum = computed(() => {
+  return cartList.value
+      ?.reduce((sum, dish) => sum + dish.number * dish.amount, 0)
+      .toFixed(2);
+});
+//计算购物车中菜品数量
+let dishNum = computed(() => {
+  return cartList.value?.reduce((total, dish) => total + dish.number, 0);
+});
+//存放购物车信息的变量
+let cartList = ref()
+//获取购物车信息的函数
+const getCartInfo = async () => {
+  let res = await getCartInfoAPI(shopStore.info.id)
+  // console.log(res.data)
+  cartList.value = res.data.data
+}
 //店铺仓库信息
 const shopStore = useShopStore()
 //购物车弹窗控制
-let popCart = ref(true)
+let popCart = ref(false)
 // 添加到购物车
 const addToCart = async () => {
   // 检查口味是否选择完整
@@ -107,7 +143,7 @@ const addToCart = async () => {
   let selectedData = flavors.value.map(flavor => `${flavor.name}:${selectedFlavors.value[flavor.name]}`).join(';');
   // console.log(selectedData)
   flavorVisible.value = false;
-  let res = await addToCartAPI({dishId:dishId.value, dishFlavor: selectedData, shopId: shopStore.info.id})
+  let res = await addToCartAPI({dishId: dishId.value, dishFlavor: selectedData, shopId: shopStore.info.id})
   // console.log(res.data)
 }
 // 存储用户选择的口味数据
@@ -156,9 +192,28 @@ const getDish = async (val) => {
 onMounted(async () => {
   await getCategory()
   await getDish(category.value[0].id);
+  await getCartInfo()
 })
 </script>
 <style scoped lang="scss">
+.custom-drawer {
+  .el-drawer__body {
+    padding-bottom: 88px; /* Ensure space for footer */
+  }}
+.order_form {
+  .order_but {
+    font-family: PingFangSC, PingFangSC-Medium;
+    font-weight: 500;
+    color: #333333;
+    background: #ffc200;
+  }
+}
+
+.orderCar {
+  flex: 1;
+  display: flex;
+}
+
 .footer_order_buttom {
   position: fixed;
   display: flex;
@@ -171,8 +226,6 @@ onMounted(async () => {
   background: #3a3a3a;
   border-radius: 25px;
   box-shadow: 0px 6px 10px 0px rgba(0, 0, 0, 0.25);
-  z-index: 99;
-  padding: 0 10px;
   box-sizing: border-box;
 
   .order_number {
@@ -202,6 +255,7 @@ onMounted(async () => {
       background-color: #e94e3c;
       color: #fff;
       font-weight: 500;
+      margin-top: 30px;
     }
   }
 
@@ -215,6 +269,7 @@ onMounted(async () => {
     font-size: 24px;
     font-family: DIN, DIN-Medium;
     font-weight: 500;
+    margin-top: 20px;
 
     .ico {
       font-size: 24px;
@@ -224,6 +279,17 @@ onMounted(async () => {
 
   .order_but {
     background-color: #6a6a6a;
+    width: 140px;
+    height: 40px;
+    line-height: 40px;
+    border-radius: 20px;
+    color: #fff;
+    text-align: center;
+    margin-top: 10px;
+  }
+
+  .order_but2 {
+    background-color: #409eff;
     width: 140px;
     height: 40px;
     line-height: 40px;

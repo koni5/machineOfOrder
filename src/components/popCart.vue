@@ -3,12 +3,14 @@
     <div class="top_title">
       <div class="tit">购物车</div>
       <div class="clear">
-        <el-icon color="#409eff"><Delete /></el-icon>
+        <el-icon color="#409eff">
+          <Delete/>
+        </el-icon>
         <span @click="clearCart" class="clear-des">清空</span>
       </div>
     </div>
     <div class="card_order_list">
-      <div class="type_item" v-for="(item, index) in cartList" :key="item.id">
+      <div class="type_item" v-for="(item, index) in props.cartList" :key="item.id">
         <div class="dish_img">
           <img
               :src="item.image"
@@ -41,12 +43,7 @@
 <script setup>
 import {ref} from 'vue';
 
-// 示例数据
-const cartList = ref([
-  {id: 1, image: 'path/to/image1', name: 'Dish 1', dishFlavor: '辣度:微辣', amount: 25, number: 1},
-  {id: 2, image: 'path/to/image2', name: 'Dish 2', dishFlavor: '麻度:中麻', amount: 30, number: 2},
-]);
-
+let props = defineProps(['cartList'])
 const clearCart = () => {
   cartList.value = [];
 };
@@ -61,11 +58,11 @@ const deleteDish = (id) => {
   }
 };
 
-const addDish = (id) => {
-  const index = cartList.value.findIndex(item => item.id === id);
-  if (index !== -1) {
-    cartList.value[index].number += 1;
-  }
+//购物车菜品加1
+const addDish = async (shopCartId) => {
+  // console.log(shopCartId)
+  await addOneAPI(shopCartId);
+  props.getCartList();
 };
 </script>
 
@@ -75,7 +72,7 @@ const addDish = (id) => {
   position: fixed;
   bottom: 0;
   left: 0;
-  height: 40vh;
+  height: 55vh;
   background-color: #fff;
   border-radius: 12px 12px 0 0;
   padding: 20px 30px;
